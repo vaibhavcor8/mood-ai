@@ -8,6 +8,8 @@ from langchain_core.messages import AIMessage, SystemMessage, HumanMessage
 
 st.set_page_config(page_title="Mood AI", page_icon="🎭", layout="centered")
 
+PHOTO_URL = "https://raw.githubusercontent.com/vaibhavcor8/mood-ai/main/WhatsApp%20Image%202026-05-10%20at%205.04.39%20PM.jpeg"
+
 MOODS = {
     "1": {"color": "#ff4444", "emoji": "😤", "label": "ANGRY", "desc": "Hot-headed & savage replies", "tone": "angry AI agent, always answer in very angry aggressive mode"},
     "2": {"color": "#f5e642", "emoji": "😄", "label": "FUNNY", "desc": "Jokes, puns & chaos",         "tone": "funny AI agent, always answer in very funny humorous mode"},
@@ -16,7 +18,6 @@ MOODS = {
 
 # ── Name detection via model ──────────────────────────────────────────────────
 def detect_name_intent(text, model):
-    """Ask model: is user setting a new name? If yes return the name, else None"""
     try:
         from langchain_core.messages import HumanMessage as HM, SystemMessage as SM
         resp = model.invoke([
@@ -30,42 +31,16 @@ def detect_name_intent(text, model):
         pass
     return None
 
-def is_name_question(text):
-    """Simple keyword check — naam poochha?"""
-    import re
-    t = text.lower().strip()
-    patterns = [
-        r'what\s+is\s+your\s+name', r'whats\s+your\s+name',
-        r'your\s+name', r'naam\s+(kya|btao|bato|batao|kya\s+hai|bolo)',
-        r'(aapka|tumhara|tera|apna)\s+naam\s*(kya|btao|bato|batao|bolo)?',
-        r'tum\s+kaun\s+ho', r'who\s+are\s+you',
-    ]
-    return any(re.search(p, t) for p in patterns)
-
-MOODS = {
-    "1": {"color": "#ff4444", "emoji": "😤", "label": "ANGRY", "desc": "Hot-headed & savage replies", "tone": "angry AI agent, always answer in very angry aggressive mode"},
-    "2": {"color": "#f5e642", "emoji": "😄", "label": "FUNNY", "desc": "Jokes, puns & chaos",         "tone": "funny AI agent, always answer in very funny humorous mode"},
-    "3": {"color": "#4fc3f7", "emoji": "😢", "label": "SAD",   "desc": "Melancholic & moody vibes",   "tone": "sad AI agent, always answer in very sad emotional mode"},
-}
-
-# ── Name detection ────────────────────────────────────────────────────────────
 NAME_QUESTION_PATTERNS = [
-    r'\bwhat\s+is\s+your\s+name\b',
-    r'\bwhats\s+your\s+name\b',
-    r'\byour\s+name\b',
-    r'\bnaam\s+(kya|btao|bato|batao|kya\s+hai|kya\s+he|bolo)\b',
+    r'\bwhat\s+is\s+your\s+name\b', r'\bwhats\s+your\s+name\b',
+    r'\byour\s+name\b', r'\bnaam\s+(kya|btao|bato|batao|kya\s+hai|kya\s+he|bolo)\b',
     r'\b(aapka|tumhara|tera|apna)\s+naam\b',
-    r'\btum\s+kaun\s+ho\b',
-    r'\bwho\s+are\s+you\b',
-    r'\bapna\s+naam\b',
+    r'\btum\s+kaun\s+ho\b', r'\bwho\s+are\s+you\b', r'\bapna\s+naam\b',
 ]
-
-# Pattern: "mera naam X hai", "my name is X", "naam X rakho", "tumhara naam X hai"
 
 def is_name_question(text):
     t = text.lower().strip()
     return any(re.search(p, t) for p in NAME_QUESTION_PATTERNS)
-
 
 def get_system_prompt(tone, name):
     return (
@@ -82,8 +57,16 @@ if "bot_name"  not in st.session_state: st.session_state.bot_name  = None
 
 # ── Pehli baar naam lo ────────────────────────────────────────────────────────
 if not st.session_state.bot_name:
-    st.markdown('<div class="title">🎭 Mood AI</div>', unsafe_allow_html=True)
-    st.markdown('<div class="subtitle">Apne AI ka naam rakho</div>', unsafe_allow_html=True)
+    st.markdown(f"""
+    <div style="display:flex;align-items:center;gap:1rem;margin-bottom:2rem;">
+        <img src="{PHOTO_URL}" width="56" height="56"
+             style="border-radius:50%;border:2px solid #f5e642;object-fit:cover;">
+        <div>
+            <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.8rem;color:#f5e642;">🎭 Mood AI</div>
+            <div style="font-size:0.7rem;color:#555;letter-spacing:0.1em;text-transform:uppercase;">by Vaibhav Srivastava</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
     with st.form("name_form"):
         user_name = st.text_input("AI ka naam kya rakhna hai?", placeholder="e.g. CHAT_SHERA")
         submitted = st.form_submit_button("Shuru Karo →")
@@ -118,7 +101,16 @@ hr {{ border-color: #1a1a1a !important; margin: 1rem 0 !important; }}
 """, unsafe_allow_html=True)
 
 # ── Header ────────────────────────────────────────────────────────────────────
-st.markdown(f'<div class="title">🎭 {name}</div>', unsafe_allow_html=True)
+st.markdown(f"""
+<div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;">
+    <img src="{PHOTO_URL}" width="52" height="52"
+         style="border-radius:50%;border:2px solid {primary};object-fit:cover;">
+    <div>
+        <div class="title">🎭 {name}</div>
+        <div style="font-size:0.68rem;color:#444;text-transform:uppercase;letter-spacing:0.12em;">by Vaibhav Srivastava</div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 st.markdown('<div class="subtitle">Choose a mood · Start chatting</div>', unsafe_allow_html=True)
 
 # ── Mood selector ─────────────────────────────────────────────────────────────
