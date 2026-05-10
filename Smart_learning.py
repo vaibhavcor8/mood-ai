@@ -82,7 +82,7 @@ D) [option]
 ---ANSWER_START---
 [Correct answer text only, no slash, no LaTeX]
 ---EXAM_INFO_START---
-[If you know which exam this appeared in and year, write it. Example: "SSC CGL 2019, RRB NTPC 2021". If unknown write: "Commonly asked in competitive exams"]
+[MUST FILL THIS. List all exams where this type of question appears with years if known. Example: "SSC CGL 2019, SSC CHSL 2021, RRB NTPC 2020, IBPS PO 2022". If exact year unknown, write exam names only like "SSC CGL, RRB NTPC, UPSC Prelims". Never leave blank.]
 ---SHORT_TRICK_START---
 [A clear short trick — 3 to 5 lines. Give the core formula or pattern, show one quick calculation step, then state the answer. Should be easy to remember but not too brief.]
 ---LONG_METHOD_START---
@@ -163,6 +163,9 @@ tab1, tab2 = st.tabs(["✏️ Type / Paste", "📎 Upload File"])
 
 extracted_text = ""
 
+if "results_output" not in st.session_state:
+    st.session_state.results_output = None
+
 with tab1:
     question_input = st.text_area(
         "Type or paste your questions",
@@ -195,24 +198,82 @@ with tab2:
             extracted_text = ""
 
 # ── Submit ─────────────────────────────────────────────────────────────────────
-if st.button("✦ Get Answers"):
+col_btn1, col_btn2 = st.columns([3, 1])
+with col_btn1:
+    get_answers = st.button("✦ Get Answers")
+with col_btn2:
+    if st.button("🔄 Reset"):
+        st.session_state.results_output = None
+        st.rerun()
+
+if get_answers:
     if not extracted_text.strip():
         st.warning("Please enter or upload questions first.")
     else:
         with st.spinner("Solving..."):
             final_prompt = prompt_template.invoke({"question": extracted_text})
             response = model.invoke(final_prompt)
-            output = response.content
+            st.session_state.results_output = response.content
 
+        output = st.session_state.results_output
         # Check for invalid
         if "---INVALID---" in output:
             reason = get_section("---INVALID---", "---INVALID_END---", output)
             st.markdown(f"""
             <div class="invalid-box">
                 ⚠️ <strong>Invalid Input</strong><br><br>
-                {reason if reason else "The input does not contain valid exam questions. Please paste proper questions."}
+                {reason if reason else "The input does not contain valid content. Please enter a question, code, or topic."}
             </div>
             """, unsafe_allow_html=True)
+
+        # ── Code explanation ──────────────────────────────────────────────────
+        elif "---CODE_EXPLAIN_START---" in output:
+            explanation  = get_section("---CODE_EXPLAIN_START---", "---CODE_OUTPUT_START---", output)
+            code_output  = get_section("---CODE_OUTPUT_START---",  "---CODE_ISSUES_START---", output)
+            code_issues  = get_section("---CODE_ISSUES_START---",  "---CODE_BLOCK_START---",  output)
+            code_block   = get_section("---CODE_BLOCK_START---",   "---CODE_END---",          output)
+
+            st.markdown(f"""
+            <div class="q-card">
+                <div class="q-number">💻 Code Analysis</div>
+                <div class="q-text">{explanation}</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            if code_output and code_output.upper() != "NO DIRECT OUTPUT.":
+                st.markdown(f"""<div style='background:#0d1a0d;border:1px solid #2d6a2d;border-radius:8px;padding:1rem;margin:0.5rem 0;'>
+                <div style='font-size:0.7rem;color:#555;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem;'>Expected Output</div>
+                <div style='font-family:monospace;font-size:0.85rem;color:#6ee86e;white-space:pre-wrap;'>{code_output}</div></div>""", unsafe_allow_html=True)
+
+            if code_issues and code_issues.upper() != "NO ISSUES FOUND.":
+                st.markdown(f"""<div style='background:#1a0a0a;border:1px solid #5a2a2a;border-radius:8px;padding:1rem;margin:0.5rem 0;'>
+                <div style='font-size:0.7rem;color:#555;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem;'>Issues / Improvements</div>
+                <div style='font-size:0.88rem;color:#ffaa6e;'>{code_issues}</div></div>""", unsafe_allow_html=True)
+
+            if code_block and code_block.upper() != "NONE":
+                st.markdown(f'<div class="code-block">{code_block}</div>', unsafe_allow_html=True)
+
+        # ── General question ──────────────────────────────────────────────────
+        elif "---GENERAL_START---" in output:
+            explanation    = get_section("---GENERAL_START---",        "---GENERAL_EXAMPLE_START---", output)
+            example        = get_section("---GENERAL_EXAMPLE_START---","---GENERAL_CHILD_START---",   output)
+            child_explain  = get_section("---GENERAL_CHILD_START---",  "---GENERAL_END---",           output)
+
+            st.markdown(f"""
+            <div class="q-card">
+                <div class="q-number">📖 Explanation</div>
+                <div class="q-text">{explanation}</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            col1, col2 = st.columns(2)
+            with col1:
+                with st.expander("💡 Real-World Example"):
+                    st.write(example or "Not available")
+            with col2:
+                with st.expander("🧒 5-Year-Old Explanation"):
+                    st.write(child_explain or "Not available")
+
         else:
             blocks = output.split("---QUESTION_START---")
             count = 0
