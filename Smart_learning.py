@@ -8,7 +8,7 @@ import io
 
 load_dotenv()
 
-st.set_page_config(page_title="Smart Learning Assistant", page_icon="📘", layout="centered")
+st.set_page_config(page_title="Smart Learning Assistant", page_icon="📘", layout="centered") 
 
 st.markdown("""
 <style>
