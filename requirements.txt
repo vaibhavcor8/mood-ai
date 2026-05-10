@@ -27,3 +27,7 @@ streamlit
 jupyter
 ipykernel
 langchain_huggingface
+
+
+pypdf
+python-docx
